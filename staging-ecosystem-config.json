@@ -1,0 +1,8 @@
+{
+    "apps": [
+      {
+        "name": "eazipay_wallet_staging",
+        "script": "npm run start:prod"
+      }
+    ]
+  }
