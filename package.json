@@ -36,6 +36,7 @@
     "@nestjs/mongoose": "^11.0.1",
     "@nestjs/platform-express": "^10.0.0",
     "@nestjs/swagger": "^8.1.0",
+    "@nestjs/throttler": "^6.4.0",
     "@types/bcrypt": "^5.0.2",
     "@types/mongoose-paginate-v2": "^1.6.4",
     "bcrypt": "^5.1.1",

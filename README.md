@@ -1,99 +1,217 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+A progressive NestJS-based Wallet API for Eazipay, with integrations for MongoDB, Redis, and Paystack.
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## Table of Contents
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+- [Table of Contents](#table-of-contents)
+- [Prerequisites](#prerequisites)
+- [Environment Variables](#environment-variables)
+- [Installation](#installation)
+- [Running the App](#running-the-app)
+  - [Development](#development)
+  - [Production](#production)
+- [Swagger Documentation](#swagger-documentation)
+- [API Endpoints](#api-endpoints)
+- [Features](#features)
+- [Middleware Setup for Webhooks](#middleware-setup-for-webhooks)
+- [Testing](#testing)
+- [Docker](#docker)
+- [Contributing](#contributing)
+- [License](#license)
 
-## Description
+## Prerequisites
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+* Node.js v16+ & npm or yarn
+* MongoDB running locally or remotely
+* Redis running locally or remotely
+* Paystack account (for transfers and webhooks)
 
-## Project setup
+## Environment Variables
 
-```bash
-$ npm install
+Create a `.env` file in the project root with the following values:
+
+```dotenv
+NODE_ENV=development
+PORT=4004
+
+# Application
+APP_NAME=Eazipay Wallet
+
+# JWT
+JWT_SECRET=thisissecret
+JWT_EXPIRES_IN=12h
+
+# MongoDB
+DATABASE_URL=
+
+# Redis
+REDIS_HOST=
+REDIS_PORT=
+REDIS_PASSWORD=
+
+# Paystack (leave blank until configured)
+PAYSTACK_SECRET_KEY=
+PAYSTACK_PUBLIC_KEY=
+PAYSTACK_WEBHOOK_SECRET=
 ```
 
-## Compile and run the project
+> **Tip:** Use a tool like \[dotenv-cli] or Nest's `ConfigModule` with Joi schema validation to ensure required env vars are set.
+
+## Installation
 
 ```bash
-# development
-$ npm run start
+# Clone the repo
+$ git clone <repo_url>
+$ cd eazipay-wallet
 
-# watch mode
+# Install dependencies
+$ npm install
+# or
+$ yarn install
+```
+
+## Running the App
+
+### Development
+
+```bash
+# watch mode, restarts on changes
 $ npm run start:dev
+```
 
-# production mode
+### Production
+
+```bash
+# build the project
+$ npm run build
+
+# start the server
 $ npm run start:prod
 ```
 
-## Run tests
+The server will be available at `http://localhost:${process.env.PORT}`.
+
+## Swagger Documentation
+
+Interactive API docs are available at:
+
+```
+http://localhost:${process.env.PORT}/api/docs
+```
+
+## API Endpoints
+
+| Method | Endpoint               | Description                                | Auth Required |
+| ------ | ---------------------- | ------------------------------------------ | ------------- |
+| POST   | `/auth/register`       | User registration                          | No            |
+| POST   | `/auth/login`          | User login                                 | No            |
+| POST   | `/wallet/fund`         | Add funds to wallet                        | Yes           |
+| POST   | `/wallet/transfer`     | Transfer funds to another user             | Yes           |
+| GET    | `/wallet/balance`      | Get wallet balance                         | Yes           |
+| GET    | `/wallet/transactions` | Get wallet transaction history             | Yes           |
+| POST   | `/payments/transfer`   | Initiate external transfer (e.g. Paystack) | Yes           |
+| POST   | `/paystack/webhook`    | Receive Paystack webhook notifications     | No            |
+| GET    | `/transfer/banks`      | Fetch supported bank list from Paystack    | Yes           |
+
+## Features
+
+1. **Configuration & Environment**
+
+   * Global loading of `config()` values via `@nestjs/config`
+   * Typed access to secrets (JWT, Redis, database URLs, etc.) through `ConfigService`
+   * Joi schema validation for environment variables (optional)
+
+2. **Database & Persistence**
+
+   * MongoDB integration via `@nestjs/mongoose`
+   * Automatic application of `mongoose-paginate-v2` plugin on all models
+
+3. **Authentication & Authorization**
+
+   * JWT issuance & verification using `@nestjs/jwt`
+   * Global `AuthGuard` (via `APP_GUARD`) protecting all routes by default
+
+4. **Caching**
+
+   * Global Nest cache backed by Redis (`cache-manager-redis-store`)
+   * Support for `@Cacheable()` or direct `CACHE_MANAGER` injections
+
+5. **Rate Limiting**
+
+   * Request throttling via `@nestjs/throttler` (configurable via your `throttle` settings)
+
+6. **Raw Redis & Distributed Locking**
+
+   * `RedisModule` exposes:
+
+     * Low-level `ioredis` client for raw Redis operations
+     * Redlock instance for distributed locking
+
+7. **Core Domain Modules**
+
+   * **UserModule**: Registration, profile CRUD, password hashing, login workflows
+   * **AuthenticationModule**: Login endpoint, token refresh, logout, JWT guards
+   * **WalletsModule**: Create/find wallet, fetch balance, fund wallet, locking & queuing support
+   * **TransactionsModule**: Record & retrieve transaction history (debits, credits, reversals)
+   * **WebhookModule**: Receive & process external callbacks (e.g. Paystack webhooks)
+
+8. **Health Check & Metrics**
+
+   * `/health` endpoint for app readiness
+   * Optional metrics middleware for Prometheus / Grafana integration
+
+## Middleware Setup for Webhooks
+
+To properly verify Paystack webhooks, configure raw-body parsing on the webhook route. In `main.ts` before `app.listen()`:
+
+```ts
+import * as express from 'express';
+
+// Paystack webhook needs raw body for HMAC validation
+app.use(
+  '/paystack/webhook',
+  express.raw({ type: 'application/json' }),
+);
+```
+
+## Testing
 
 ```bash
-# unit tests
+# Run unit tests
 $ npm run test
 
-# e2e tests
+# Run e2e tests
 $ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
 ```
 
-## Deployment
+## Docker
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+A `Dockerfile` and `docker-compose.yml` are provided for local development:
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+```yaml
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - '${PORT}:4004'
+    env_file: .env
+    depends_on:
+      - mongo
+      - redis
 
-```bash
-$ npm install -g mau
-$ mau deploy
+  mongo:
+    image: mongo:6.0
+    ports:
+      - '27017:27017'
+
+  redis:
+    image: redis:7.0
+    ports:
+      - '6379:6379'
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## Contributing
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+MIT

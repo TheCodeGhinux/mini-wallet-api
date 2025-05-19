@@ -25,6 +25,7 @@ import { CacheModule } from "@nestjs/cache-manager";
 import { RedisClientOptions } from "redis";
 import { TransferModule } from "./modules/transfer/transfer.module";
 import * as redisStore from "cache-manager-redis-store";
+import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 
 @Module({
   imports: [
@@ -86,6 +87,7 @@ import * as redisStore from "cache-manager-redis-store";
       }),
       adapter: ExpressAdapter,
     }),
+    ThrottlerModule.forRoot({ throttlers: [config().throttle] }),
     UserModule,
     AuthenticationModule,
     // CoursesModule,
@@ -109,6 +111,10 @@ import * as redisStore from "cache-manager-redis-store";
     {
       provide: "CONFIG",
       useClass: ConfigService,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
     TokenService,
   ],
